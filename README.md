@@ -7,16 +7,6 @@ conda activate main-ds
 pip install -r requirements.txt
 ```
 
-## Cara Menjalankan - Github
-1. Clone repository ini.
-2. Instal dependensi dengan:
-   ```
-   pip install -r requirements.txt
-   ```
-3. Jalankan aplikasi dengan:
-   ```
-   streamlit run dashboard.py
-   ```
 ## Cara Menjalankan - Terminal
 1. Clone repository ini:
    ```
@@ -35,6 +25,17 @@ pip install -r requirements.txt
    streamlit run dashboard.py
    ```
 
+## Cara Menjalankan - Github
+1. Clone repository ini.
+2. Instal dependensi dengan:
+   ```
+   pip install -r requirements.txt
+   ```
+3. Jalankan aplikasi dengan:
+   ```
+   streamlit run dashboard.py
+   ```
+   
 ## Struktur Folder
 - `data/` : Berisi file data CSV.
 - `dashboard.py` : Script untuk dashboard menggunakan Streamlit.
