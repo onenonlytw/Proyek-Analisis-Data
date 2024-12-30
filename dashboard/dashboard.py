@@ -1,4 +1,5 @@
 import streamlit as st
+import os
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
@@ -13,10 +14,19 @@ st.set_page_config(
 # Function to load data
 @st.cache_data
 def load_data():
-    # Asumsikan data sudah dibersihkan
-    df_day = pd.read_csv('day.csv')  # Sesuaikan path file
-    df_hour = pd.read_csv('hour.csv')  # Sesuaikan path file
-    df_hour_clean = pd.read_csv('bike_sharing_hourly_cleaned.csv')
+    # Mendapatkan direktori file ini (script yang sedang dijalankan)
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+
+    # Bangun path absolut untuk setiap file data
+    day_path = os.path.join(current_dir, 'day.csv')
+    hour_path = os.path.join(current_dir, 'hour.csv')
+    hour_clean_path = os.path.join(current_dir, 'bike_sharing_hourly_cleaned.csv')
+
+    # Membaca file CSV
+    df_day = pd.read_csv(day_path)
+    df_hour = pd.read_csv(hour_path)
+    df_hour_clean = pd.read_csv(hour_clean_path)
+
     return df_day, df_hour, df_hour_clean
 
 # Load data
