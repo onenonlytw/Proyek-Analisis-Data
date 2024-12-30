@@ -14,9 +14,9 @@ st.set_page_config(
 @st.cache_data
 def load_data():
     # Asumsikan data sudah dibersihkan
-    df_day = pd.read_csv('D:/Dicoding/Submission/data/day.csv')  # Sesuaikan path file
-    df_hour = pd.read_csv('D:/Dicoding/Submission/data/hour.csv')  # Sesuaikan path file
-    df_hour_clean = pd.read_csv('D:/Dicoding/Submission/data/bike_sharing_hourly_cleaned.csv')
+    df_day = pd.read_csv('day.csv')  # Sesuaikan path file
+    df_hour = pd.read_csv('hour.csv')  # Sesuaikan path file
+    df_hour_clean = pd.read_csv('bike_sharing_hourly_cleaned.csv')
     return df_day, df_hour, df_hour_clean
 
 # Load data
