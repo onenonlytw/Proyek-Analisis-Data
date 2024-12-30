@@ -20,7 +20,7 @@ pip install -r requirements.txt
 ## Cara Menjalankan - Terminal
 1. Clone repository ini:
    ```
-   
+   https://github.com/onenonlytw/Proyek-Analisis-Data.git
    ```
 2. Masuk ke direktori proyek:
    ```
