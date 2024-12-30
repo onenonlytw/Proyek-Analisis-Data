@@ -7,7 +7,7 @@ conda activate main-ds
 pip install -r requirements.txt
 ```
 
-## Cara Menjalankan - Terminal
+## Cara Menjalankan
 1. Clone repository ini:
    ```
    https://github.com/onenonlytw/Proyek-Analisis-Data.git
@@ -21,17 +21,6 @@ pip install -r requirements.txt
    pip install -r requirements.txt
    ```
 4. Jalankan aplikasi dengan:
-   ```
-   streamlit run dashboard.py
-   ```
-
-## Cara Menjalankan - Github
-1. Clone repository ini.
-2. Instal dependensi dengan:
-   ```
-   pip install -r requirements.txt
-   ```
-3. Jalankan aplikasi dengan:
    ```
    streamlit run dashboard.py
    ```
