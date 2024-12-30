@@ -24,7 +24,7 @@ pip install -r requirements.txt
    ```
 2. Masuk ke direktori proyek:
    ```
-   cd Proyek-Analisis-Data
+   cd nama-direktori
    ```
 3. Instal dependensi dengan:
    ```
