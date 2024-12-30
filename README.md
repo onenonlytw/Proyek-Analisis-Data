@@ -1,9 +1,11 @@
 ﻿# 🚲 Bike Sharing Analysis Dashboard
 
 ## Setup Environment - Anaconda
+```
 conda create --name main-ds
 conda activate main-ds
 pip install -r requirements.txt
+```
 
 ## Cara Menjalankan
 1. Clone repository ini.
@@ -20,6 +22,7 @@ pip install -r requirements.txt
 - `data/` : Berisi file data CSV.
 - `dashboard.py` : Script untuk dashboard menggunakan Streamlit.
 - `Proyek_Analisis_Data.ipynb` : Notebook untuk analisis data.
+- `url.txt` : link deploy dashboard
 
 ## Dependensi
 - pandas
