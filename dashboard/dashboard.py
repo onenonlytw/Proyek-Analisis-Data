@@ -3,6 +3,7 @@ import os
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
+from datetime import datetime
 
 # Set page configuration
 st.set_page_config(
@@ -26,7 +27,11 @@ def load_data():
     df_day = pd.read_csv(day_path)
     df_hour = pd.read_csv(hour_path)
     df_hour_clean = pd.read_csv(hour_clean_path)
-
+    
+    # Convert dteday to datetime
+    df_day['dteday'] = pd.to_datetime(df_day['dteday'])
+    df_hour['dteday'] = pd.to_datetime(df_hour['dteday'])
+    
     return df_day, df_hour, df_hour_clean
 
 # Load data
@@ -56,6 +61,30 @@ weather_mapfactor = {
 
 # Main title
 st.title("🚲 Bike Sharing Analysis Dashboard")
+
+# Date range filter in sidebar
+st.sidebar.title("Rentang Waktu")
+date_range = st.sidebar.date_input(
+    "Select Date Range",
+    [df_day['dteday'].min(), df_day['dteday'].max()],
+    min_value=df_day['dteday'].min(),
+    max_value=df_day['dteday'].max()
+)
+
+# Apply date filter to dataframes
+mask_day = (
+    (df_day['dteday'].dt.date >= date_range[0]) &
+    (df_day['dteday'].dt.date <= date_range[1])
+)
+
+mask_hour = (
+    (df_hour['dteday'].dt.date >= date_range[0]) &
+    (df_hour['dteday'].dt.date <= date_range[1])
+)
+
+df_day_filtered = df_day[mask_day]
+df_hour_filtered = df_hour[mask_hour]
+
 st.markdown("---")
 
 # Sidebar for navigation
@@ -74,29 +103,37 @@ if analysis == "Overview":
     # Key metrics in columns
     col1, col2, col3, col4 = st.columns(4)
     with col1:
-        st.metric("Total Rentals", f"{df_day['cnt'].sum():,}")
+        st.metric("Total Rentals", f"{df_day_filtered['cnt'].sum():,}")
     with col2:
-        st.metric("Avg Daily Rentals", f"{df_day['cnt'].mean():.0f}")
+        st.metric("Avg Daily Rentals", f"{df_day_filtered['cnt'].mean():.0f}")
     with col3:
-        st.metric("Max Daily Rentals", f"{df_day['cnt'].max():,}")
+        st.metric("Max Daily Rentals", f"{df_day_filtered['cnt'].max():,}")
     with col4:
-        st.metric("Total Days", f"{len(df_day):,}")
+        st.metric("Total Days", f"{len(df_day_filtered):,}")
+        
 
 elif analysis == "Seasonal & Weather Patterns":
     st.header("🌤️ Seasonal and Weather Patterns Analysis")
     
-    # Tab untuk memisahkan visualisasi
     tab1, tab2 = st.tabs(["Seasonal Analysis", "Weather Analysis"])
     
     with tab1:
-        # Analisis Musim
-        seasonal_data = df_day.groupby('season')[['casual', 'registered']].mean()
+        # Add season selector for this specific view
+        selected_year = st.selectbox(
+            "Select Year",
+            options=[2011, 2012],
+            key="season_year"
+        )
+        
+        # Filter data by year
+        year_filter = 1 if selected_year == 2012 else 0
+        seasonal_data = df_day_filtered[df_day_filtered['yr'] == year_filter].groupby('season')[['casual', 'registered']].mean()
         seasonal_data.index = seasonal_data.index.map(season_map)
         
         fig_seasonal = px.bar(
             seasonal_data,
             barmode='group',
-            title='Average Rentals by Season: Casual vs Registered Users',
+            title=f'Average Rentals by Season: Casual vs Registered Users ({selected_year})',
             labels={'value': 'Average Rentals', 'variable': 'User Type', 'season': 'Season'},
             height=500
         )
@@ -109,14 +146,27 @@ elif analysis == "Seasonal & Weather Patterns":
                 '- Perbedaan musiman lebih signifikan pada pengguna casual')
         
     with tab2:
-        # Analisis Cuaca
-        weather_data = df_day.groupby('weathersit')[['casual', 'registered']].mean()
+        # Add hour range selector for weather analysis
+        hour_range = st.slider(
+            "Select Hour Range",
+            0, 23,
+            (0, 23),
+            key="weather_hours"
+        )
+        
+        # Filter hour data
+        weather_hour_data = df_hour_filtered[
+            (df_hour_filtered['hr'] >= hour_range[0]) &
+            (df_hour_filtered['hr'] <= hour_range[1])
+        ]
+        
+        weather_data = weather_hour_data.groupby('weathersit')[['casual', 'registered']].mean()
         weather_data.index = weather_data.index.map(weather_map)
-         
+        
         fig_weather = px.bar(
             weather_data,
             barmode='group',
-            title='Average Rentals by Weather Condition',
+            title=f'Average Rentals by Weather Condition (Hours: {hour_range[0]}:00 - {hour_range[1]}:00)',
             labels={'value': 'Average Rentals', 'variable': 'User Type', 'weathersit': 'Weather Condition'},
             height=500
         )
@@ -131,42 +181,74 @@ elif analysis == "Seasonal & Weather Patterns":
 elif analysis == "Working Day Analysis":
     st.header("📅 Working Day vs Holiday Analysis")
     
-    # Hourly patterns
-    hourly_patterns = df_hour.groupby(['hr', 'workingday'])['cnt'].mean().unstack()
+    # Add user type selector
+    user_type = st.radio(
+        "Select User Type",
+        ["All Users", "Casual", "Registered"],
+        key="working_day_user_type"
+    )
+    
+    # Prepare data based on user selection
+    if user_type == "All Users":
+        metric = 'cnt'
+    elif user_type == "Casual":
+        metric = 'casual'
+    else:
+        metric = 'registered'
+    
+    # Mapping untuk workingday
+    workingday_map = {0: 'Holiday', 1: 'Working Day'}
+    
+    hourly_patterns = df_hour_filtered.groupby(['hr', 'workingday'])[metric].mean().unstack()
+    hourly_patterns.columns = [workingday_map[col] for col in hourly_patterns.columns]
+    
     fig_hourly = px.line(
         hourly_patterns,
-        title='Average Hourly Rentals: Working Days vs Holidays',
+        title=f'Average Hourly Rentals: Working Days vs Holidays ({user_type})',
         labels={'value': 'Average Rentals', 'hr': 'Hour of Day'},
         height=500
     )
     st.plotly_chart(fig_hourly, use_container_width=True)
     
-    # Tambahan statistik
     col1, col2 = st.columns(2)
     with col1:
         st.subheader("Working Day Statistics")
-        st.dataframe(df_hour[df_hour['workingday']==1]['cnt'].describe())
+        st.dataframe(df_hour_filtered[df_hour_filtered['workingday']==1][metric].describe())
     with col2:
         st.subheader("Holiday Statistics")
-        st.dataframe(df_hour[df_hour['workingday']==0]['cnt'].describe())
-        
+        st.dataframe(df_hour_filtered[df_hour_filtered['workingday']==0][metric].describe())
+    
     # Tambahan insight tren
     st.info('💡 **Insight:**\n\n'
             '- Terdapat perbedaan pola yang jelas antara penggunaan di hari kerja dan hari libur\n'
             '- Hari kerja menunjukkan dua puncak penggunaan yang distinct, yaitu pada pagi hari dan sore hari\n'
             '- Rata-rata penggunaan di hari kerja sedikit lebih tinggi dibanding hari libur\n'
-            '- Hari libur memperlihatkan pola yang lebih merata sepanjang hari dengan puncak di tengah har\n'
+            '- Hari libur memperlihatkan pola yang lebih merata sepanjang hari dengan puncak di tengah hari\n'
             '- Variabilitas penggunaan di hari kerja (std: 185.1) juga lebih tinggi dibandingkan hari libur (std: 172.8), menunjukkan konsentrasi penggunaan yang lebih tinggi pada jam-jam tertentu')
 
 else:  # Weather Impact
     st.header("🌡️ Weather Impact Analysis")
     
-    # Weather situation box plot
+    # Add temperature range filter
+    temp_range = st.slider(
+        "Select Temperature Range (Normalized)",
+        float(df_hour_filtered['temp'].min()),
+        float(df_hour_filtered['temp'].max()),
+        (float(df_hour_filtered['temp'].min()), float(df_hour_filtered['temp'].max())),
+        key="weather_temp"
+    )
+    
+    # Filter data by temperature
+    weather_temp_data = df_hour_filtered[
+        (df_hour_filtered['temp'] >= temp_range[0]) &
+        (df_hour_filtered['temp'] <= temp_range[1])
+    ]
+    
     fig_box = px.box(
-        df_hour,
+        weather_temp_data,
         x='weathersit',
         y='cnt',
-        title='Rental Distribution by Weather Situation',
+        title=f'Rental Distribution by Weather Situation (Temp Range: {temp_range[0]:.2f} - {temp_range[1]:.2f})',
         labels={'weathersit': 'Weather Condition', 'cnt': 'Number of Rentals'},
         height=500
     )
@@ -175,27 +257,20 @@ else:  # Weather Impact
 
     st.plotly_chart(fig_box, use_container_width=True)
     
-    # st.write("Unique weather situations:", df_hour_clean['weathersit'].unique())
-    
-     # Tampilkan statistik dalam kolom
     st.subheader("Weather Statistics")
+    cols = st.columns(len(weather_temp_data['weathersit'].unique()))
     
-    # Buat kolom berdasarkan jumlah kondisi cuaca unik
-    weather_conditions = sorted(df_hour_clean['weathersit'].unique())
-    cols = st.columns(len(weather_conditions))
-    
-    # Tampilkan statistik untuk setiap kondisi cuaca dalam kolom
-    for idx, weather in enumerate(weather_conditions):
+    for idx, weather in enumerate(sorted(weather_temp_data['weathersit'].unique())):
         with cols[idx]:
-            st.write(f"{weather}")
-            stats = df_hour_clean[df_hour_clean['weathersit'] == weather]['cnt'].describe()
+            st.write(f"{weather_map[weather]}")
+            stats = weather_temp_data[weather_temp_data['weathersit'] == weather]['cnt'].describe()
             st.dataframe(stats)
     
     # Tambahan insight faktor cuaca
     st.info('💡 **Insight:**\n\n'
                 '- Cuaca cerah menghasilkan rata-rata penggunaan tertinggi 204.9 sepeda/jam, sementara kondisi berkabut menurunkan penggunaan menjadi rata-rata 175.2 sepeda/jam\n'
                 '- Dampak paling signifikan terlihat pada kondisi hujan/salju ringan yang menurunkan penggunaan hingga 111.6 sepeda/jam, dan kondisi hujan/salju lebat yang menurunkan penggunaan secara drastis menjadi hanya 74.3 sepeda/jam\n'
-                '- Kondisi cuaca menjadi salah satu faktor penentu utama dalam keputusan pengguna untuk menyewa sepeda, dengan pengaruh yang lebih kuat pada pengguna casual dibandingkan pengguna registered')   
+                '- Kondisi cuaca menjadi salah satu faktor penentu utama dalam keputusan pengguna untuk menyewa sepeda, dengan pengaruh yang lebih kuat pada pengguna casual dibandingkan pengguna registered')
 
 # Footer
 st.markdown("---")
